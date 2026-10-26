@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+
+    .calculator {
+      width: min(320px, 92vw);
+      padding: 18px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 35px rgba(0, 0, 0, 0.06);
+    }
+
+    #display {
+      height: 90px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      overflow: hidden;
+      padding: 10px;
+      font-size: 42px;
+      font-weight: 300;
+      white-space: nowrap;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+    }
+
+    button {
+      min-height: 58px;
+      border: none;
+      border-radius: 12px;
+      background: #f0f0f0;
+      color: #222;
+      font-size: 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    button:active {
+      background: #ddd;
+    }
+
+    button.operator {
+      background: #e4e4e4;
+    }
+
+    button.equal {
+      background: #333;
+      color: white;
+    }
+
+    button.zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="calculator">
+    <div id="display" aria-live="off">0</div>
+
+    <div class="keys">
+      <button data-action="clear">AC</button>
+      <button data-action="sign">±</button>
+      <button data-action="percent">%</button>
+      <button class="operator" data-op="/">÷</button>
+
+      <button data-num="7">7</button>
+      <button data-num="8">8</button>
+      <button data-num="9">9</button>
+      <button class="operator" data-op="*">×</button>
+
+      <button data-num="4">4</button>
+      <button data-num="5">5</button>
+      <button data-num="6">6</button>
+      <button class="operator" data-op="-">−</button>
+
+      <button data-num="1">1</button>
+      <button data-num="2">2</button>
+      <button data-num="3">3</button>
+      <button class="operator" data-op="+">+</button>
+
+      <button class="zero" data-num="0">0</button>
+      <button data-action="decimal">.</button>
+      <button class="equal" data-action="equals">=</button>
+    </div>
+  </main>
+
+  <script>
+    // ==========================================
+    // YOUR MP3 PLAYLIST
+    // Put your songs in the "music" folder.
+    // Add or remove paths as needed.
+    // ==========================================
+
+    const playlist = [
+      "music/song1.mp3",
+  "music/song2.mp3",
+  "music/song3.mp3",
+  "music/song4.mp3",
+  "music/song5.mp3",
+  "music/song6.mp3",
+  "music/song7.mp3",
+  "music/song8.mp3",
+  "music/song9.mp3",
+  "music/song10.mp3",
+  "music/song11.mp3",
+  "music/song12.mp3",
+  "music/song13.mp3",
+  "music/song14.mp3",
+  "music/song15.mp3",
+  "music/song16.mp3",
+  "music/song17.mp3",
+  "music/song18.mp3",
+  "music/song19.mp3",
+  "music/song20.mp3"
+ ];
+
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.volume = 0.7;
+
+    let trackIndex = 0;
+
+    function playTrack(index) {
+      if (playlist.length === 0) return;
+
+      trackIndex =
+        (index + playlist.length) % playlist.length;
+
+      audio.pause();
+      audio.src = playlist[trackIndex];
+      audio.currentTime = 0;
+
+      audio.play().catch(() => {});
+    }
+
+    function toggleMusic() {
+      if (audio.paused) {
+        if (!audio.src) {
+          playTrack(trackIndex);
+        } else {
+          audio.play().catch(() => {});
+        }
+      } else {
+        audio.pause();
+      }
+    }
+
+    audio.addEventListener("ended", () => {
+      playTrack(trackIndex + 1);
+    });
+
+    // ==========================================
+    // SIMULTANEOUS KEYBOARD SHORTCUTS
+    // Hold M and press the second key.
+    // ==========================================
+
+    const heldKeys = new Set();
+    const handledCombos = new Set();
+
+    const shortcuts = {
+      // Play / pause
+      "p": toggleMusic,
+
+      // Volume up by 10%
+      "arrowup": () => {
+        audio.volume = Math.min(
+          1,
+          Math.round((audio.volume + 0.1) * 10) / 10
+        );
+      },
+
+      // Volume down by 10%
+      "arrowdown": () => {
+        audio.volume = Math.max(
+          0,
+          Math.round((audio.volume - 0.1) * 10) / 10
+        );
+      },
+
+      // Previous song
+      "arrowleft": () => {
+        playTrack(trackIndex - 1);
+      },
+
+      // Next song
+      "arrowright": () => {
+        playTrack(trackIndex + 1);
+      },
+
+      // Rewind 10 seconds
+      "v": () => {
+        if (audio.src) {
+          audio.currentTime = Math.max(
+            0,
+            audio.currentTime - 10
+          );
+        }
+      },
+
+      // Forward 10 seconds
+      "n": () => {
+        if (audio.src && Number.isFinite(audio.duration)) {
+          audio.currentTime = Math.min(
+            audio.duration,
+            audio.currentTime + 10
+          );
+        }
+      },
+
+      // Stop music and attempt to leave the page
+      "g": () => {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+
+        window.close();
+
+        // Browsers usually block closing a tab
+        // that was not opened by JavaScript.
+        if (!window.closed) {
+          location.replace("about:blank");
+        }
+      }
+    };
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+
+      heldKeys.add(key);
+
+      // Do not interfere with OS/browser shortcuts.
+      if (
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey
+      ) {
+        return;
+      }
+
+      // M must be held at the same time.
+      if (!heldKeys.has("m")) return;
+      if (!Object.hasOwn(shortcuts, key)) return;
+
+      const combo = "m+" + key;
+
+      // Trigger once per key press.
+      if (handledCombos.has(combo)) return;
+
+      event.preventDefault();
+      handledCombos.add(combo);
+      shortcuts[key]();
+    });
+
+    document.addEventListener("keyup", (event) => {
+      const key = event.key.toLowerCase();
+
+      heldKeys.delete(key);
+
+      for (const combo of handledCombos) {
+        const otherKey = combo.slice(2);
+
+        if (key === "m" || key === otherKey) {
+          handledCombos.delete(combo);
+        }
+      }
+    });
+
+    // Clear pressed-key state if the tab loses focus.
+    window.addEventListener("blur", () => {
+      heldKeys.clear();
+      handledCombos.clear();
+    });
+
+    // ==========================================
+    // CALCULATOR LOGIC
+    // ==========================================
+
+    const display = document.getElementById("display");
+
+    let current = "0";
+    let stored = null;
+    let operator = null;
+    let startNew = false;
+
+    function updateDisplay() {
+      display.textContent = current;
+    }
+
+    function enterDigit(digit) {
+      if (current === "Error") clearCalc();
+
+      if (startNew) {
+        current = digit;
+        startNew = false;
+      } else if (current === "0") {
+        current = digit;
+      } else if (current.length < 14) {
+        current += digit;
+      }
+
+      updateDisplay();
+    }
+
+    function enterDecimal() {
+      if (current === "Error") clearCalc();
+
+      if (startNew) {
+        current = "0";
+        startNew = false;
+      }
+
+      if (!current.includes(".")) {
+        current += ".";
+      }
+
+      updateDisplay();
+    }
+
+    function chooseOp(op) {
+      if (current === "Error") return;
+
+      if (operator !== null && !startNew) {
+        calculate();
+      }
+
+      stored = Number(current);
+      operator = op;
+      startNew = true;
+    }
+
+    function calculate() {
+      if (
+        operator === null ||
+        stored === null ||
+        current === "Error"
+      ) {
+        return;
+      }
+
+      const a = stored;
+      const b = Number(current);
+      let result;
+
+      switch (operator) {
+        case "+":
+          result = a + b;
+          break;
+        case "-":
+          result = a - b;
+          break;
+        case "*":
+          result = a * b;
+          break;
+        case "/":
+          result = b === 0 ? NaN : a / b;
+          break;
+      }
+
+      current = Number.isFinite(result)
+        ? String(Number(result.toPrecision(10)))
+        : "Error";
+
+      stored = null;
+      operator = null;
+      startNew = true;
+
+      updateDisplay();
+    }
+
+    function clearCalc() {
+      current = "0";
+      stored = null;
+      operator = null;
+      startNew = false;
+      updateDisplay();
+    }
+
+    function backspace() {
+      if (current === "Error" || startNew) {
+        clearCalc();
+        return;
+      }
+
+      current = current.length > 1
+        ? current.slice(0, -1)
+        : "0";
+
+      updateDisplay();
+    }
+
+    document.querySelector(".keys").addEventListener(
+      "click",
+      (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+
+        if (button.dataset.num !== undefined) {
+          enterDigit(button.dataset.num);
+        } else if (button.dataset.op) {
+          chooseOp(button.dataset.op);
+        } else {
+          switch (button.dataset.action) {
+            case "clear":
+              clearCalc();
+              break;
+
+            case "sign":
+              if (current !== "Error") {
+                current = String(Number(current) * -1);
+                updateDisplay();
+              }
+              break;
+
+            case "percent":
+              if (current !== "Error") {
+                current = String(Number(current) / 100);
+                updateDisplay();
+              }
+              break;
+
+            case "decimal":
+              enterDecimal();
+              break;
+
+            case "equals":
+              calculate();
+              break;
+          }
+        }
+      }
+    );
+
+    // Keyboard support for normal calculator use.
+    document.addEventListener("keydown", (event) => {
+      const key = event.key;
+
+      if (
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey ||
+        heldKeys.has("m")
+      ) {
+        return;
+      }
+
+      if (/^[0-9]$/.test(key)) {
+        enterDigit(key);
+      } else if (key === ".") {
+        enterDecimal();
+      } else if (["+", "-", "*", "/"].includes(key)) {
+        chooseOp(key);
+      } else if (key === "Enter" || key === "=") {
+        event.preventDefault();
+        calculate();
+      } else if (key === "Escape") {
+        clearCalc();
+      } else if (key === "Backspace") {
+        backspace();
+      }
+    });
+  </script>
+</body>
+</html>
